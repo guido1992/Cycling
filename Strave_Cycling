@@ -1,0 +1,250 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "AI2euthEIgNt",
+        "outputId": "9a17ccac-8118-4d49-ac2a-6b20a3629bbf"
+      },
+      "source": [
+        "### Player Positional profile\n",
+        "\n",
+        "# This script reads in position data from InStat from each game and assigns league mins based on position played by player\n",
+        "\n",
+        "# Connect to Google Drive\n",
+        "from google.colab import drive\n",
+        "drive.mount('/content/drive')"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Mounted at /content/drive\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 204
+        },
+        "id": "CLiRMgrtKAex",
+        "outputId": "342befda-4a4a-4af0-beaf-9cdd1b733da5"
+      },
+      "source": [
+        "# Import Libraries\n",
+        "import glob, os\n",
+        "import numpy as np\n",
+        "import pandas as pd\n",
+        "\n",
+        "# Set Max Rows\n",
+        "pd.set_option(\"display.max_rows\", None)\n",
+        "\n",
+        "# Set Max columns\n",
+        "pd.set_option(\"display.max_columns\", None)\n",
+        "\n",
+        "# Read in data\n",
+        "#path = '/content/drive/MyDrive/General/Strava Cycling/GPX files'\n",
+        "df = pd.concat(map(pd.read_excel, glob.glob(os.path.join('/content/drive/MyDrive/General/Strava Cycling/GPX files',\n",
+        "                                                         '*_2021.xlsx'))))\n",
+        "\n",
+        "# Keep specific columns - Only value filled columns\n",
+        "df = df[['version', 'creator', 'ns1:name43', 'ns1:type51', 'lat52', 'lon53', 'ns1:ele54', 'ns1:time55']]\n",
+        "\n",
+        "# Rename columns\n",
+        "df.rename(columns={'version':'Version',\n",
+        "                    'creator':'Creator',\n",
+        "                    'ns1:name43':'Ride_Name',\n",
+        "                    'ns1:type51':'XXX',\n",
+        "                    'lat52':'Latitude',\n",
+        "                    'lon53':'Longitude',\n",
+        "                    'ns1:ele54':'Elevation',\n",
+        "                    'ns1:time55':'DateTime'},\n",
+        "                 inplace=True)\n",
+        "\n",
+        "# Split DateTime column\n",
+        "df[['Date', 'Time']] = df.DateTime.str.split(\"T\", expand=True,)\n",
+        "\n",
+        "# Remove 'Z' character from Time\n",
+        "df[['Time1', 'Other']] = df.Time.str.split(\"Z\", expand=True,)\n",
+        "\n",
+        "# Select only columns we need\n",
+        "df = df[['Version', 'Creator', 'Ride_Name', 'XXX', 'Latitude', 'Longitude', 'Elevation', 'DateTime', 'Date', 'Time1']]\n",
+        "\n",
+        "# Rename Time1 column to Time\n",
+        "df.rename(columns={'Time1':'Time'},\n",
+        "                 inplace=True)\n",
+        "\n",
+        "# Remove NA rows\n",
+        "df = df.dropna()\n",
+        "\n",
+        "# Unique Name of each Ride\n",
+        "df.Ride_Name.unique()\n",
+        "\n",
+        "df.head()"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/html": [
+              "<div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>Version</th>\n",
+              "      <th>Creator</th>\n",
+              "      <th>Ride_Name</th>\n",
+              "      <th>XXX</th>\n",
+              "      <th>Latitude</th>\n",
+              "      <th>Longitude</th>\n",
+              "      <th>Elevation</th>\n",
+              "      <th>DateTime</th>\n",
+              "      <th>Date</th>\n",
+              "      <th>Time</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>1.1</td>\n",
+              "      <td>StravaGPX Android</td>\n",
+              "      <td>Evening Ride</td>\n",
+              "      <td>1.0</td>\n",
+              "      <td>53.338848</td>\n",
+              "      <td>-6.241003</td>\n",
+              "      <td>8.6</td>\n",
+              "      <td>2021-01-03T19:16:55Z</td>\n",
+              "      <td>2021-01-03</td>\n",
+              "      <td>19:16:55</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>1.1</td>\n",
+              "      <td>StravaGPX Android</td>\n",
+              "      <td>Evening Ride</td>\n",
+              "      <td>1.0</td>\n",
+              "      <td>53.338609</td>\n",
+              "      <td>-6.241330</td>\n",
+              "      <td>9.4</td>\n",
+              "      <td>2021-01-03T19:16:58Z</td>\n",
+              "      <td>2021-01-03</td>\n",
+              "      <td>19:16:58</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>1.1</td>\n",
+              "      <td>StravaGPX Android</td>\n",
+              "      <td>Evening Ride</td>\n",
+              "      <td>1.0</td>\n",
+              "      <td>53.338196</td>\n",
+              "      <td>-6.242049</td>\n",
+              "      <td>11.1</td>\n",
+              "      <td>2021-01-03T19:16:59Z</td>\n",
+              "      <td>2021-01-03</td>\n",
+              "      <td>19:16:59</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>1.1</td>\n",
+              "      <td>StravaGPX Android</td>\n",
+              "      <td>Evening Ride</td>\n",
+              "      <td>1.0</td>\n",
+              "      <td>53.338206</td>\n",
+              "      <td>-6.242050</td>\n",
+              "      <td>11.0</td>\n",
+              "      <td>2021-01-03T19:17:00Z</td>\n",
+              "      <td>2021-01-03</td>\n",
+              "      <td>19:17:00</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>5</th>\n",
+              "      <td>1.1</td>\n",
+              "      <td>StravaGPX Android</td>\n",
+              "      <td>Evening Ride</td>\n",
+              "      <td>1.0</td>\n",
+              "      <td>53.338409</td>\n",
+              "      <td>-6.241788</td>\n",
+              "      <td>10.3</td>\n",
+              "      <td>2021-01-03T19:17:02Z</td>\n",
+              "      <td>2021-01-03</td>\n",
+              "      <td>19:17:02</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>"
+            ],
+            "text/plain": [
+              "   Version            Creator     Ride_Name  XXX   Latitude  Longitude  \\\n",
+              "1      1.1  StravaGPX Android  Evening Ride  1.0  53.338848  -6.241003   \n",
+              "2      1.1  StravaGPX Android  Evening Ride  1.0  53.338609  -6.241330   \n",
+              "3      1.1  StravaGPX Android  Evening Ride  1.0  53.338196  -6.242049   \n",
+              "4      1.1  StravaGPX Android  Evening Ride  1.0  53.338206  -6.242050   \n",
+              "5      1.1  StravaGPX Android  Evening Ride  1.0  53.338409  -6.241788   \n",
+              "\n",
+              "   Elevation              DateTime        Date      Time  \n",
+              "1        8.6  2021-01-03T19:16:55Z  2021-01-03  19:16:55  \n",
+              "2        9.4  2021-01-03T19:16:58Z  2021-01-03  19:16:58  \n",
+              "3       11.1  2021-01-03T19:16:59Z  2021-01-03  19:16:59  \n",
+              "4       11.0  2021-01-03T19:17:00Z  2021-01-03  19:17:00  \n",
+              "5       10.3  2021-01-03T19:17:02Z  2021-01-03  19:17:02  "
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 26
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "K8Gi7Is6IXlL"
+      },
+      "source": [
+        "# Write to csv file - Df.to_csv('Filename.csv') - additions remove index\n",
+        "df.to_csv(r'C:\\Users\\Alex\\Desktop\\Strava\\2021_cycle_XY.csv', index=False, encoding='utf8')"
+      ],
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
